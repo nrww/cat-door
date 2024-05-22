@@ -79,7 +79,7 @@ services:
     depends_on:
       db-node:
         condition: service_healthy
-      user_service:
+      cat_reid_service:
         condition: service_healthy
 
 
