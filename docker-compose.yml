@@ -1,0 +1,92 @@
+version: '2.1'
+
+services:
+  db-node:
+    build:
+      context: mariadb
+      dockerfile: Dockerfile
+    container_name: db-node
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: cat_db
+      MYSQL_USER: cat_user
+      MYSQL_PASSWORD: cat_user
+      MYSQL_ROOT_PASSWORD: '1'
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
+      --init-file /data/application/init.sql
+      --character-set-server=utf8mb4
+    networks:
+      - cat-network
+    ports:
+      - 3360:3306
+    healthcheck:
+      test: "/usr/bin/mariadb --user=cat_db --password=cat_user --execute \"SHOW DATABASES;\""
+      interval: 15s
+      timeout: 1s
+      retries: 5
+    volumes:
+      - db-node-data:/var/lib/mysql
+      - ./init.sql:/data/application/init.sql
+
+  cat_reid_service:
+    build:
+      context: cat_reid_service
+      dockerfile: Dockerfile
+    container_name: cat_reid_service
+    environment:
+      - DB_HOST=db-node
+      - DB_PORT=3306
+      - DB_LOGIN=cat_user
+      - DB_PASSWORD=cat_user
+      - DB_DATABASE=cat_db
+    ports:
+      - 8081:8081
+    healthcheck:
+      test: curl -sS http://localhost:8081/ || exit 1
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cat-network
+    depends_on:
+      db-node:
+        condition: service_healthy
+        
+  telegram_bot_service:
+    build:
+      context: telegram_bot_service
+      dockerfile: Dockerfile
+    container_name: telegram_bot_service
+    environment:
+      - DB_HOST=db-node
+      - DB_PORT=3306
+      - DB_LOGIN=cat_user
+      - DB_PASSWORD=cat_user
+      - DB_DATABASE=cat_db
+      - TOKEN=6737405122:AAFHSP3ENsbLKjpAUo4sHbV1tPVnZSfkXzI
+    ports:
+      - 8082:8082
+    healthcheck:
+      test: curl -sS http://localhost:8082/ || exit 1
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cat-network
+    depends_on:
+      db-node:
+        condition: service_healthy
+      user_service:
+        condition: service_healthy
+
+
+volumes:
+  db-node-data:
+
+networks:
+  cat-network:
+    driver: "bridge"
+    external: false
