@@ -19,5 +19,10 @@ COPY --from=builder /app/requirements.txt .
 
 RUN pip install --no-cache /wheels/*
 
+RUN apt-get update && \
+    apt-get install -y git curl
+
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
 RUN git clone  https://github.com/nrww/Cat-Telegram-Bot
 ENTRYPOINT ["python", "/app/Cat-Telegram-Bot/main.py"]
