@@ -1,0 +1,4 @@
+---DROP DATABASE IF EXISTS service_db; 
+CREATE DATABASE IF NOT EXISTS cat_db
+    DEFAULT CHARACTER SET = 'utf8mb4';
+GRANT ALL PRIVILEGES ON cat_db.* TO 'cat_user'@'%';
